@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glow Progress — OMAD Fitness Tracker</title>
+  <style>
+    :root {
+      --glass: rgba(255, 255, 255, 0.18);
+      --glass-strong: rgba(255, 255, 255, 0.28);
+      --stroke: rgba(255, 255, 255, 0.38);
+      --text: #ffffff;
+      --muted: rgba(255, 255, 255, 0.78);
+      --deep: #0b2545;
+      --blue: #37b7ff;
+      --aqua: #6fffe9;
+      --green: #85f28f;
+      --pink: #ff9dd2;
+      --yellow: #fff3a3;
+      --shadow: 0 28px 80px rgba(0, 51, 102, 0.35);
+      --radius-xl: 34px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 15%, rgba(255, 255, 255, 0.95) 0 3%, transparent 12%),
+        radial-gradient(circle at 80% 12%, rgba(111, 255, 233, 0.7) 0 10%, transparent 28%),
+        radial-gradient(circle at 20% 80%, rgba(255, 157, 210, 0.65) 0 8%, transparent 26%),
+        linear-gradient(135deg, #7bdcff 0%, #56c4ff 28%, #60e6a8 57%, #99d8ff 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      z-index: -1;
+      border-radius: 50%;
+      filter: blur(12px);
+      opacity: 0.7;
+      animation: float 11s ease-in-out infinite alternate;
+    }
+
+    body::before {
+      width: 430px;
+      height: 430px;
+      top: 7%;
+      left: -110px;
+      background: radial-gradient(circle, rgba(255,255,255,.85), rgba(87,214,255,.18) 58%, transparent 70%);
+    }
+
+    body::after {
+      width: 520px;
+      height: 520px;
+      right: -150px;
+      bottom: -120px;
+      background: radial-gradient(circle, rgba(255,255,255,.7), rgba(143,255,160,.28) 54%, transparent 70%);
+      animation-delay: -5s;
+    }
+
+    @keyframes float {
+      from { transform: translate3d(0, 0, 0) scale(1); }
+      to { transform: translate3d(26px, -24px, 0) scale(1.07); }
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 54px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 12px;
+      z-index: 10;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      margin-bottom: 22px;
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      background: rgba(255,255,255,.22);
+      backdrop-filter: blur(28px) saturate(175%);
+      box-shadow: 0 10px 32px rgba(13, 71, 128, 0.16);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-left: 10px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: #073b5d;
+    }
+
+    .orb {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 25%, white 0 18%, #8ffff0 25%, #1ea7ff 56%, #0061a8 100%);
+      box-shadow: inset -8px -12px 20px rgba(0, 65, 122, .28), 0 8px 22px rgba(0, 112, 190, .25);
+    }
+
+    nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .nav-btn,
+    button,
+    .upload-label {
+      border: 1px solid rgba(255,255,255,.38);
+      border-radius: 999px;
+      color: #073b5d;
+      background: linear-gradient(180deg, rgba(255,255,255,.82), rgba(255,255,255,.35));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 8px 18px rgba(0, 75, 130, .15);
+      padding: 11px 16px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: .25s ease;
+      font-size: 14px;
+    }
+
+    .nav-btn:hover,
+    button:hover,
+    .upload-label:hover { transform: translateY(-2px); }
+    .nav-btn.active { background: linear-gradient(180deg, #ffffff, #8fffee); color: #004d72; }
+
+    .page { display: none; animation: fade .35s ease both; }
+    .page.active { display: block; }
+
+    @keyframes fade {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.3fr .7fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .card {
+      position: relative;
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius-xl);
+      background: var(--glass);
+      backdrop-filter: blur(30px) saturate(190%);
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.44);
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(135deg, rgba(255,255,255,.42), transparent 30%, rgba(255,255,255,.12));
+    }
+
+    .card-content { position: relative; padding: 28px; }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      font-size: clamp(42px, 7vw, 82px);
+      line-height: .9;
+      letter-spacing: -0.075em;
+      color: white;
+      text-shadow: 0 7px 28px rgba(0, 63, 119, .28);
+      margin-bottom: 18px;
+    }
+
+    h2 {
+      font-size: clamp(28px, 4vw, 46px);
+      letter-spacing: -0.055em;
+      margin-bottom: 10px;
+      text-shadow: 0 5px 20px rgba(0, 70, 130, .22);
+    }
+
+    h3 { letter-spacing: -0.03em; margin-bottom: 12px; }
+    p { color: var(--muted); line-height: 1.6; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.28);
+      border: 1px solid rgba(255,255,255,.34);
+      color: #073b5d;
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+
+    .hero-side {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+      min-height: 420px;
+    }
+
+    .big-number {
+      font-size: 72px;
+      line-height: 1;
+      font-weight: 950;
+      letter-spacing: -0.08em;
+    }
+
+    .grid { display: grid; gap: 18px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,.48);
+      border-radius: 20px;
+      background: rgba(255,255,255,.26);
+      color: white;
+      padding: 14px 15px;
+      outline: none;
+      font: inherit;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.24);
+    }
+
+    input::placeholder,
+    textarea::placeholder { color: rgba(255,255,255,.75); }
+    textarea { min-height: 150px; resize: vertical; }
+    label { font-size: 13px; color: rgba(255,255,255,.88); font-weight: 800; }
+
+    .stat-card { min-height: 156px; }
+    .stat-label { font-size: 13px; color: rgba(255,255,255,.75); font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
+    .stat-value { font-size: 42px; font-weight: 950; letter-spacing: -0.07em; margin-top: 8px; }
+
+    .progress-track {
+      width: 100%;
+      height: 16px;
+      background: rgba(255,255,255,.26);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.28);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ffffff, #8ffff0, #7dff94);
+      box-shadow: 0 0 22px rgba(143,255,240,.9);
+      transition: width .45s ease;
+    }
+
+    .day-tabs {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .day-tab {
+      border-radius: 23px;
+      min-height: 86px;
+      padding: 14px 10px;
+      text-align: left;
+      white-space: normal;
+    }
+
+    .day-tab.active {
+      background: linear-gradient(180deg, #ffffff, #8ffff0 45%, #8dff9d);
+      color: #003f5f;
+    }
+
+    .task {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 14px;
+      border-radius: 22px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(255,255,255,.28);
+      background: rgba(255,255,255,.16);
+      transition: .25s ease;
+    }
+
+    .task:hover { background: rgba(255,255,255,.24); transform: translateY(-1px); }
+
+    .task input {
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      accent-color: #7dff94;
+      margin-top: 1px;
+    }
+
+    .task.done { opacity: .72; }
+    .task.done span { text-decoration: line-through; }
+
+    .photo-box {
+      min-height: 270px;
+      border-radius: 28px;
+      border: 1px dashed rgba(255,255,255,.52);
+      background: rgba(255,255,255,.14);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .photo-box img {
+      width: 100%;
+      height: 100%;
+      max-height: 420px;
+      object-fit: cover;
+      display: block;
+    }
+
+    input[type="file"] { display: none; }
+
+    .calendar-card {
+      min-height: 170px;
+      padding: 18px;
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,.3);
+      background: rgba(255,255,255,.15);
+      cursor: pointer;
+      transition: .25s ease;
+    }
+
+    .calendar-card:hover { transform: translateY(-4px); background: rgba(255,255,255,.25); }
+    .calendar-card strong { font-size: 19px; }
+
+    .quote {
+      font-size: clamp(24px, 4vw, 42px);
+      line-height: 1.05;
+      font-weight: 950;
+      letter-spacing: -0.055em;
+      color: white;
+    }
+
+    .mini-note {
+      padding: 14px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.28);
+      color: rgba(255,255,255,.86);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .hidden { display: none !important; }
+    .mt { margin-top: 18px; }
+    .mb { margin-bottom: 18px; }
+
+    @media (max-width: 900px) {
+      .hero, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .day-tabs, .grid-7 { grid-template-columns: repeat(2, 1fr); }
+      .topbar { border-radius: 30px; flex-direction: column; align-items: stretch; }
+      nav { justify-content: center; }
+      .brand { justify-content: center; }
+    }
+
+    @media (max-width: 520px) {
+      .day-tabs, .grid-7 { grid-template-columns: 1fr; }
+      .card-content { padding: 21px; }
+      nav { display: grid; grid-template-columns: repeat(2, 1fr); }
+      .nav-btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><div class="orb"></div><span>Glow Progress</span></div>
+      <nav>
+        <button class="nav-btn active" data-page="home">Home</button>
+        <button class="nav-btn" data-page="diet">Diet</button>
+        <button class="nav-btn" data-page="exercise">Exercise</button>
+        <button class="nav-btn" data-page="checkin">Daily Check</button>
+        <button class="nav-btn" data-page="progress">Progress</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="home" class="page active">
+        <div class="hero">
+          <div class="card">
+            <div class="card-content">
+              <div class="pill">✨ Frutiger Aero / iOS-style tracker</div>
+              <h1>Your daily glow-up dashboard.</h1>
+              <p>Track your OMAD meals, training, weight, photos, and self-checks. Every checkbox becomes proof that you are moving closer to your goal.</p>
+              <div class="grid grid-2 mt">
+                <label>Starting weight, kg
+                  <input id="startWeight" type="number" placeholder="Example: 78" />
+                </label>
+                <label>Goal weight, kg
+                  <input id="goalWeight" type="number" placeholder="Example: 68" />
+                </label>
+              </div>
+              <div class="mini-note mt">Important: OMAD is simple, but it can feel intense. Keep your meal nourishing, drink water, and stop if you feel dizzy, weak, or unwell.</div>
+            </div>
+          </div>
+          <div class="hero-side">
+            <div class="card">
+              <div class="card-content">
+                <div class="stat-label">Today</div>
+                <div class="big-number" id="todayPercent">0%</div>
+                <p>Today’s completion score.</p>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-content">
+                <div class="quote">Small proof beats pressure.</div>
+                <p class="mt">Open today’s page, check one thing, and continue gently.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="diet" class="page">
+        <div class="card mb"><div class="card-content"><h2>Diet — Easy OMAD meals</h2><p>One simple meal a day using normal home products: eggs, chicken, tuna, yogurt, rice, potatoes, beans, lentils, vegetables, fruit, oats, bread, cheese, and olive oil.</p></div></div>
+        <div class="day-tabs" id="dietTabs"></div>
+        <div class="card"><div class="card-content"><h2 id="dietTitle"></h2><div id="dietTasks"></div></div></div>
+      </section>
+
+      <section id="exercise" class="page">
+        <div class="card mb"><div class="card-content"><h2>Exercise — Fat loss + muscle tone</h2><p>Each day has strength work and movement. For muscle gain while losing fat, focus on controlled reps, progressive effort, protein, sleep, and consistency.</p></div></div>
+        <div class="day-tabs" id="exerciseTabs"></div>
+        <div class="card"><div class="card-content"><h2 id="exerciseTitle"></h2><div id="exerciseTasks"></div></div></div>
+      </section>
+
+      <section id="checkin" class="page">
+        <div class="card mb"><div class="card-content"><h2>Daily Check</h2><p>Add your weight, upload a picture, and write a quick self-check. Your data stays saved in this browser.</p></div></div>
+        <div class="day-tabs" id="checkTabs"></div>
+        <div class="grid grid-2">
+          <div class="card"><div class="card-content">
+            <h2 id="checkTitle"></h2>
+            <label>Daily weight, kg<input id="dailyWeight" type="number" placeholder="Today’s weight" /></label>
+            <label class="mt">Self-check note<textarea id="dailyNote" placeholder="Energy, mood, cravings, strength, sleep, one small win..."></textarea></label>
+          </div></div>
+          <div class="card"><div class="card-content">
+            <h2>Daily picture</h2>
+            <label for="photoInput" class="upload-label">Upload picture</label>
+            <input id="photoInput" type="file" accept="image/*" />
+            <div class="photo-box mt" id="photoPreview">📸<br />No picture yet</div>
+          </div></div>
+        </div>
+      </section>
+
+      <section id="progress" class="page">
+        <div class="grid grid-4 mb">
+          <div class="card stat-card"><div class="card-content"><div class="stat-label">Weight lost</div><div class="stat-value" id="lostKg">0 kg</div></div></div>
+          <div class="card stat-card"><div class="card-content"><div class="stat-label">Goal progress</div><div class="stat-value" id="goalProgress">0%</div></div></div>
+          <div class="card stat-card"><div class="card-content"><div class="stat-label">Consistency</div><div class="stat-value" id="consistency">0%</div></div></div>
+          <div class="card stat-card"><div class="card-content"><div class="stat-label">Tasks done</div><div class="stat-value" id="tasksDone">0/0</div></div></div>
+        </div>
+        <div class="card mb"><div class="card-content"><h2>Progress Analyzer</h2><p id="analysisText"></p><div class="progress-track"><div id="progressFill" class="progress-fill"></div></div></div></div>
+        <div class="card"><div class="card-content"><h2>Weekly Self Analyzer</h2><div class="grid grid-7" id="weekAnalyzer"></div><button class="mt" id="resetBtn">Reset all progress</button></div></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+    const plan = {
+      Monday: {
+        focus: "Leg Day",
+        meals: [
+          "Main protein: 2–3 eggs, chicken, tuna, or beans.",
+          "Carb: rice, potatoes, or 1–2 slices of bread.",
+          "Big salad: cucumber, tomato, lettuce/cabbage + olive oil.",
+          "Side: yogurt + one fruit."
+        ],
+        exercise: [
+          "8 min brisk walk warm-up.",
+          "Squats — 4 sets x 10 reps.",
+          "Walking lunges — 3 sets x 12 each leg.",
+          "Glute bridges — 4 sets x 12 reps.",
+          "Calf raises — 3 sets x 15 reps.",
+          "10 min fast walking finisher."
+        ]
+      },
+      Tuesday: {
+        focus: "Stomach / Core Day",
+        meals: [
+          "Main protein: chicken, tuna, eggs, yogurt, or beans.",
+          "Carb: boiled potatoes, rice, or whole-wheat bread.",
+          "Vegetables: salad or cooked vegetables.",
+          "Add fruit or yogurt if still hungry."
+        ],
+        exercise: [
+          "5 min mobility warm-up.",
+          "Plank — 4 rounds x 30–60 sec.",
+          "Dead bugs — 3 sets x 12 each side.",
+          "Mountain climbers — 4 rounds x 30 sec.",
+          "Bicycle crunches — 3 sets x 20 reps.",
+          "25–35 min walk."
+        ]
+      },
+      Wednesday: {
+        focus: "Arm Day",
+        meals: [
+          "Omelet with cheese, or chicken/tuna plate.",
+          "Beans, rice, potatoes, or bread for energy.",
+          "Tomato/cucumber salad or cooked vegetables.",
+          "Yogurt with oats or one fruit."
+        ],
+        exercise: [
+          "Arm circles + light cardio warm-up.",
+          "Push-ups — 4 sets, controlled effort.",
+          "Rows with bottles/backpack — 4 sets x 10.",
+          "Shoulder press — 3 sets x 10.",
+          "Bicep curls — 3 sets x 12.",
+          "Chair triceps dips — 3 sets x 12."
+        ]
+      },
+      Thursday: {
+        focus: "Thigh Day",
+        meals: [
+          "Protein: tuna, chicken, eggs, lentils, or beans.",
+          "Carb: boiled potatoes, rice, pasta, or bread.",
+          "Vegetables: cabbage, spinach, peppers, cucumber, tomato.",
+          "Milk/yogurt + fruit inside the eating window."
+        ],
+        exercise: [
+          "8 min stairs or walking warm-up.",
+          "Sumo squats — 4 sets x 12.",
+          "Step-ups on chair/stairs — 3 sets x 12 each leg.",
+          "Side lunges — 3 sets x 10 each side.",
+          "Wall sit — 3 rounds x 30–60 sec.",
+          "Intervals: 8 rounds, 20 sec fast / 40 sec easy."
+        ]
+      },
+      Friday: {
+        focus: "Leg Day + Fat Burn",
+        meals: [
+          "Protein: chicken, eggs, tuna, beans, or cheese.",
+          "Carb: rice, potatoes, bread, or oats.",
+          "Large salad with olive oil and lemon.",
+          "Fruit for something sweet."
+        ],
+        exercise: [
+          "10 min walk warm-up.",
+          "Goblet squats with backpack/bottle — 4 sets x 10.",
+          "Reverse lunges — 3 sets x 12 each leg.",
+          "Hip thrusts — 4 sets x 10.",
+          "HIIT: 10–12 min intervals.",
+          "8 min cool-down stretching."
+        ]
+      },
+      Saturday: {
+        focus: "Stomach + Full Body",
+        meals: [
+          "Protein: eggs, chicken, tuna, beans, or yogurt.",
+          "Vegetables: cooked or raw, as much as you like.",
+          "Carb: rice, potatoes, oats, or whole-wheat bread.",
+          "Yogurt, cheese, or milk inside your meal window."
+        ],
+        exercise: [
+          "5–8 min warm-up.",
+          "Circuit x 4: squats, push-ups, rows, planks.",
+          "Russian twists — 3 sets x 20.",
+          "Burpees or step-back burpees — 3 sets x 8–12.",
+          "20 min easy-moderate cardio.",
+          "Stretch hips, legs, and shoulders."
+        ]
+      },
+      Sunday: {
+        focus: "Recovery + Tone",
+        meals: [
+          "Simple soup/stew with chicken, meat, beans, or lentils.",
+          "Bread, rice, or potatoes if needed.",
+          "Salad or cooked vegetables.",
+          "Yogurt + fruit; prepare food for Monday."
+        ],
+        exercise: [
+          "30–45 min relaxed walk.",
+          "Light rows with bottles/band — 3 sets x 15.",
+          "Bodyweight squats — 3 sets x 12.",
+          "Side leg raises — 3 sets x 15 each side.",
+          "15 min stretching or yoga.",
+          "Write one win from the week."
+        ]
+      }
+    };
+
+    const storageKey = "glowProgressCompleteWebsite";
+    let state = loadState();
+    let selectedDietDay = getTodayName();
+    let selectedExerciseDay = getTodayName();
+    let selectedCheckDay = getTodayName();
+
+    function getTodayName() {
+      const jsDay = new Date().getDay();
+      return days[jsDay === 0 ? 6 : jsDay - 1];
+    }
+
+    function defaultState() {
+      const entries = {};
+      days.forEach(day => {
+        entries[day] = { weight: "", note: "", photo: "", checked: {} };
+        [...plan[day].meals, ...plan[day].exercise].forEach((_, index) => entries[day].checked[index] = false);
+      });
+      return { startWeight: "", goalWeight: "", entries };
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem(storageKey);
+      if (!saved) return defaultState();
+      try { return JSON.parse(saved); } catch { return defaultState(); }
+    }
+
+    function saveState() {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+      renderAll();
+    }
+
+    function $(id) { return document.getElementById(id); }
+
+    document.querySelectorAll(".nav-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        $(btn.dataset.page).classList.add("active");
+        renderAll();
+      });
+    });
+
+    function renderDayTabs(containerId, activeDay, clickHandler) {
+      const box = $(containerId);
+      box.innerHTML = "";
+      days.forEach(day => {
+        const btn = document.createElement("button");
+        btn.className = "day-tab" + (day === activeDay ? " active" : "");
+        btn.innerHTML = `<strong>${day.slice(0, 3)}</strong><br><span>${plan[day].focus}</span><br><small>${dayScore(day)}% done</small>`;
+        btn.onclick = () => clickHandler(day);
+        box.appendChild(btn);
+      });
+    }
+
+    function renderTasks(containerId, day, type) {
+      const box = $(containerId);
+      const items = type === "meals" ? plan[day].meals : plan[day].exercise;
+      const offset = type === "meals" ? 0 : plan[day].meals.length;
+      box.innerHTML = "";
+      items.forEach((item, i) => {
+        const index = offset + i;
+        const label = document.createElement("label");
+        label.className = "task" + (state.entries[day].checked[index] ? " done" : "");
+        label.innerHTML = `<input type="checkbox" ${state.entries[day].checked[index] ? "checked" : ""}><span>${item}</span>`;
+        label.querySelector("input").onchange = () => {
+          state.entries[day].checked[index] = !state.entries[day].checked[index];
+          saveState();
+        };
+        box.appendChild(label);
+      });
+    }
+
+    function dayScore(day) {
+      const total = plan[day].meals.length + plan[day].exercise.length;
+      const done = Object.values(state.entries[day].checked).filter(Boolean).length;
+      return Math.round((done / total) * 100);
+    }
+
+    function getStats() {
+      const weights = days.map(day => parseFloat(state.entries[day].weight)).filter(n => !Number.isNaN(n));
+      const first = parseFloat(state.startWeight) || weights[0] || 0;
+      const current = weights.length ? weights[weights.length - 1] : first;
+      const goal = parseFloat(state.goalWeight) || 0;
+      const lost = first && current ? +(first - current).toFixed(1) : 0;
+      const targetLoss = first && goal ? first - goal : 0;
+      const goalProgress = targetLoss > 0 ? Math.min(100, Math.max(0, Math.round((lost / targetLoss) * 100))) : 0;
+      const totalTasks = days.reduce((sum, d) => sum + plan[d].meals.length + plan[d].exercise.length, 0);
+      const completed = days.reduce((sum, d) => sum + Object.values(state.entries[d].checked).filter(Boolean).length, 0);
+      const consistency = Math.round((completed / totalTasks) * 100);
+      return { first, current, goal, lost, targetLoss, goalProgress, totalTasks, completed, consistency };
+    }
+
+    function analysisText(stats) {
+      if (!stats.current) return "Start by adding your starting weight and today’s weight. Then complete today’s meal and workout checkboxes. Progress starts with one honest check-in.";
+      if (stats.lost > 0 && stats.consistency >= 70) return `Beautiful work. You are down ${stats.lost} kg and your consistency is strong. Keep your OMAD meal protein-rich, keep training, and let the proof build.`;
+      if (stats.lost > 0) return `You are down ${stats.lost} kg. Your body is responding. Raise consistency gently: complete one more checkbox today than yesterday.`;
+      if (stats.lost === 0) return "The scale is stable. That can still be progress if your photos, energy, strength, or habits are improving. Keep collecting proof.";
+      return "The scale moved up, but that can happen from water, salt, stress, sleep, or soreness. Do not punish yourself. Return calmly to the plan.";
+    }
+
+    function renderCheckin() {
+      $("checkTitle").textContent = selectedCheckDay + " Check-in";
+      $("dailyWeight").value = state.entries[selectedCheckDay].weight;
+      $("dailyNote").value = state.entries[selectedCheckDay].note;
+      const photoBox = $("photoPreview");
+      if (state.entries[selectedCheckDay].photo) {
+        photoBox.innerHTML = `<img src="${state.entries[selectedCheckDay].photo}" alt="Progress picture">`;
+      } else {
+        photoBox.innerHTML = "📸<br />No picture yet";
+      }
+    }
+
+    function renderProgress() {
+      const stats = getStats();
+      $("lostKg").textContent = `${stats.lost || 0} kg`;
+      $("goalProgress").textContent = `${stats.goalProgress}%`;
+      $("consistency").textContent = `${stats.consistency}%`;
+      $("tasksDone").textContent = `${stats.completed}/${stats.totalTasks}`;
+      $("progressFill").style.width = `${stats.goalProgress}%`;
+      $("analysisText").textContent = analysisText(stats);
+      $("todayPercent").textContent = dayScore(getTodayName()) + "%";
+
+      const week = $("weekAnalyzer");
+      week.innerHTML = "";
+      days.forEach(day => {
+        const card = document.createElement("div");
+        card.className = "calendar-card";
+        card.innerHTML = `<strong>${day}</strong><p>${plan[day].focus}</p><div class="stat-value" style="font-size:34px">${dayScore(day)}%</div><small>${state.entries[day].weight ? state.entries[day].weight + " kg" : "No weight yet"}</small>`;
+        card.onclick = () => {
+          selectedCheckDay = day;
+          document.querySelector('[data-page="checkin"]').click();
+        };
+        week.appendChild(card);
+      });
+    }
+
+    function renderAll() {
+      $("startWeight").value = state.startWeight;
+      $("goalWeight").value = state.goalWeight;
+      renderDayTabs("dietTabs", selectedDietDay, day => { selectedDietDay = day; renderAll(); });
+      renderDayTabs("exerciseTabs", selectedExerciseDay, day => { selectedExerciseDay = day; renderAll(); });
+      renderDayTabs("checkTabs", selectedCheckDay, day => { selectedCheckDay = day; renderAll(); });
+      $("dietTitle").textContent = selectedDietDay + " OMAD Meal";
+      $("exerciseTitle").textContent = selectedExerciseDay + " — " + plan[selectedExerciseDay].focus;
+      renderTasks("dietTasks", selectedDietDay, "meals");
+      renderTasks("exerciseTasks", selectedExerciseDay, "exercise");
+      renderCheckin();
+      renderProgress();
+    }
+
+    $("startWeight").addEventListener("input", e => { state.startWeight = e.target.value; saveState(); });
+    $("goalWeight").addEventListener("input", e => { state.goalWeight = e.target.value; saveState(); });
+    $("dailyWeight").addEventListener("input", e => { state.entries[selectedCheckDay].weight = e.target.value; saveState(); });
+    $("dailyNote").addEventListener("input", e => { state.entries[selectedCheckDay].note = e.target.value; saveState(); });
+    $("photoInput").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = event => { state.entries[selectedCheckDay].photo = event.target.result; saveState(); };
+      reader.readAsDataURL(file);
+    });
+    $("resetBtn").addEventListener("click", () => {
+      if (confirm("Reset all saved progress on this device?")) {
+        state = defaultState();
+        saveState();
+      }
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
